@@ -1,0 +1,12 @@
+{
+  "name": "Laravel Vapor Workflow",
+  "description": "Deployment Workflow for Laravel Vapor.",
+  "iconName": "laravel-vapor",
+  "categories": [
+    "PHP",
+    "Blade"
+  ],
+  "filePatterns": [
+    "vapor.yml$"
+  ]
+}
