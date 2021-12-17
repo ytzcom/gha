@@ -7,9 +7,9 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'develop' }}
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
     env:
-      APP_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'develop' }}
+      APP_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
 
     steps:
       - name: Check out code
