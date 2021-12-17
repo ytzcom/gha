@@ -5,15 +5,15 @@ This repository contains workflows to run in your projects.
 The available workflows are:
 
 * Linters
-** TLint
-** PHPCS
-** PHPStan
+ * TLint
+ * PHPCS
+ * PHPStan
 
 * Testing
-** Laravel Artisan Test
+ * Laravel Artisan Test
 
 * Deployment
-** Laravel Vapor
+ * Laravel Vapor
 
 You can use these workflows by including a Job in your Workflow like so:
 
