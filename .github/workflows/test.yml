@@ -2,18 +2,24 @@ name: Test
 
 on:
   workflow_call:
+    secrets:
+      COMPOSER_AUTH_JSON:
+        required: true
 
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'develop' }}
     env:
-      APP_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      APP_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'develop' }}
 
     steps:
       - name: Check out code
         uses: actions/checkout@v2
+        with:
+          lfs: true
+          submodules: recursive
 
       - name: Setup Node
         uses: actions/setup-node@v2
@@ -25,14 +31,23 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.composer/cache/files
-          key: dependencies-composer-${{ hashFiles('composer.json') }}
+          key: dependencies-composer-${{ hashFiles('**/composer.lock') }}
+
+      - name: Cache NPM dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: dependencies-node-${{ hashFiles('**/package-lock.json') }}
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.0.8
+          php-version: 8.1
           extensions: posix, dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
           coverage: none
+
+      - name: Add HTTP basic auth credentials
+        run: echo '${{ secrets.COMPOSER_AUTH_JSON }}' > $GITHUB_WORKSPACE/auth.json
 
       - name: Validate Composer
         run: composer validate
@@ -43,7 +58,7 @@ jobs:
       - name: Copy testing environment config file
         run: php -r "file_exists('.env') || copy('.env.testing', '.env');"
 
-      - name: Copy fallback example environment config file
+      - name: Copy example environment config file
         run: php -r "file_exists('.env') || copy('.env.example', '.env');"
 
       - name: Generate Laravel encryption key
@@ -63,3 +78,6 @@ jobs:
         with:
           name: Logs
           path: ./storage/logs
+
+      - name: Remove auth.json file
+        run: rm -f $GITHUB_WORKSPACE/auth.json

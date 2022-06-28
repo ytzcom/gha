@@ -2,7 +2,13 @@ name: Linters - PHPStan
 
 on:
   workflow_call:
+    inputs:
+      VAPOR_REGION:
+        required: false
+        type: string
     secrets:
+      COMPOSER_AUTH_JSON:
+        required: true
       VAPOR_API_TOKEN:
         required: true
 
@@ -10,29 +16,48 @@ jobs:
   phpstan:
     name: PHPStan
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'develop' }}
     env:
-      APP_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      APP_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'develop' }}
 
     steps:
       - name: Check out code
         uses: actions/checkout@v2
+        with:
+          lfs: true
+          submodules: recursive
 
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
           path: ~/.composer/cache/files
-          key: dependencies-composer-${{ hashFiles('composer.json') }}
+          key: dependencies-composer-${{ hashFiles('**/composer.lock') }}
+
+      - name: Cache NPM dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: dependencies-node-${{ hashFiles('**/package-lock.json') }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.0.8
+          php-version: 8.1
           extensions: posix, dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
           coverage: none
 
+      - name: Add HTTP basic auth credentials
+        run: echo '${{ secrets.COMPOSER_AUTH_JSON }}' > $GITHUB_WORKSPACE/auth.json
+
+      - name: Validate Composer
+        run: composer validate
+
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress --no-scripts --ignore-platform-reqs
+
+      - name: Set VaporFile from Region
+        run: |
+          ./vapor-switch.sh --region ${{ inputs.VAPOR_REGION }} --force
 
       - name: Update .env
         run: |
@@ -43,3 +68,6 @@ jobs:
 
       - name: PHPStan Analyze
         run: vendor/bin/phpstan analyze
+
+      - name: Remove auth.json file
+        run: rm -f $GITHUB_WORKSPACE/auth.json
