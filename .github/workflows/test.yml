@@ -78,7 +78,7 @@ jobs:
         run: npm ci && npm run prod
 
       - name: Database Debug
-        run: mysql -h 127.0.0.1 --port ${{ job.services.mysql.ports[3306] }} -u root -e 'CREATE DATABASE IF NOT EXISTS test;'
+        run: mysql -h 127.0.0.1 --port ${{ job.services.mysql.ports[3306] }} -u root -e 'CREATE DATABASE IF NOT EXISTS test; SHOW DATABASES;'
 
       - name: Run Tests
         run: ./vendor/bin/pest
