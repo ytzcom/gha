@@ -6,8 +6,10 @@ on:
 jobs:
   tlint:
     name: TLint
-
     runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    env:
+      APP_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
 
     steps:
       - name: Check out code

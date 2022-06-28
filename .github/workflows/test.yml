@@ -6,12 +6,20 @@ on:
 jobs:
   test:
     name: Test
-
     runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    env:
+      APP_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
 
     steps:
       - name: Check out code
         uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+          cache: npm
 
       - name: Cache dependencies
         uses: actions/cache@v2
@@ -35,11 +43,14 @@ jobs:
       - name: Copy testing environment config file
         run: php -r "file_exists('.env') || copy('.env.testing', '.env');"
 
-      - name: Copy example environment config file
+      - name: Copy fallback example environment config file
         run: php -r "file_exists('.env') || copy('.env.example', '.env');"
 
       - name: Generate Laravel encryption key
         run: php artisan key:generate
+
+      - name: Prepare Frontend Assets
+        run: npm ci && npm run prod
 
       - name: Run Tests
         run: ./vendor/bin/pest
