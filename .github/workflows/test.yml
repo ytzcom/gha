@@ -13,9 +13,16 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'develop' }}
     env:
       APP_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'develop' }}
-      DB_DATABASE: laravel_testing
-      DB_USER: root
-      DB_PASSWORD: root
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: laravel_testing
+        ports:
+          - 3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
       - name: Check out code
@@ -41,11 +48,6 @@ jobs:
         with:
           path: ~/.npm
           key: dependencies-node-${{ hashFiles('**/package-lock.json') }}
-
-      - name: Set up MySQL
-        run: |
-          sudo /etc/init.d/mysql start
-          mysql -e 'CREATE DATABASE ${{ env.DB_DATABASE }};' -u${{ env.DB_USER }} -p${{ env.DB_PASSWORD }}
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -74,6 +76,9 @@ jobs:
 
       - name: Prepare Frontend Assets
         run: npm ci && npm run prod
+
+      - name: Database Debug
+      - run: mysql -h 127.0.0.1 --port ${{ job.services.mysql.ports[3306] }} -u root -p -e 'CREATE DATABASE IF NOT EXISTS test;'
 
       - name: Run Tests
         run: ./vendor/bin/pest
